@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, LogOut, Settings, Image as ImageIcon, Briefcase, FileText, UploadCloud } from "lucide-react";
+import { User, LogOut, Settings, Image as ImageIcon, Briefcase, FileText, UploadCloud, Mail, Trash2 } from "lucide-react";
 
 export default function AdminDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -17,6 +17,22 @@ export default function AdminDashboard() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Campus");
+  
+  // Contact Messages State
+  const [contacts, setContacts] = useState<any[]>([]);
+  
+  // Site Settings State
+  const [siteSettings, setSiteSettings] = useState({
+    collegeName: "",
+    address: "",
+    phone: "",
+    email: "",
+    instagramUrl: "",
+    facebookUrl: "",
+    twitterUrl: "",
+    linkedinUrl: ""
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +49,8 @@ export default function AdminDashboard() {
       setToken(data.token);
       setIsLoggedIn(true);
       fetchAdmissions(data.token);
+      fetchContacts(data.token);
+      fetchSettings();
     } catch (error: any) {
       alert(error.message);
     }
@@ -48,6 +66,84 @@ export default function AdminDashboard() {
       if (res.ok) setAdmissions(data);
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const fetchContacts = async (authToken: string) => {
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/data/contacts`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      if (res.ok) setContacts(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/data/settings`);
+      const data = await res.json();
+      if (res.ok) setSiteSettings(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/data/settings`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(siteSettings),
+      });
+      if (!res.ok) throw new Error("Failed to update settings");
+      alert("Site settings updated successfully!");
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleDeleteAdmission = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this admission application?")) return;
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/data/admissions/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to delete admission");
+      setAdmissions(admissions.filter(adm => adm._id !== id));
+      alert("Admission deleted successfully");
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const handleDeleteContact = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this message?")) return;
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/data/contacts/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to delete message");
+      setContacts(contacts.filter(contact => contact._id !== id));
+      alert("Message deleted successfully");
+    } catch (error: any) {
+      alert(error.message);
     }
   };
 
@@ -157,6 +253,18 @@ export default function AdminDashboard() {
           >
             <ImageIcon size={18} /> <span>Gallery Upload</span>
           </button>
+          <button 
+            onClick={() => { setActiveTab("Contact Messages"); fetchContacts(token); }}
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'Contact Messages' ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:bg-white/5'}`}
+          >
+            <Mail size={18} /> <span>Contact Messages</span>
+          </button>
+          <button 
+            onClick={() => { setActiveTab("Site Settings"); fetchSettings(); }}
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'Site Settings' ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:bg-white/5'}`}
+          >
+            <Settings size={18} /> <span>Site Settings</span>
+          </button>
           {/* Other Nav items can securely stay here */}
         </nav>
 
@@ -216,7 +324,15 @@ export default function AdminDashboard() {
                             {adm.status}
                           </span>
                         </td>
-                        <td className="py-4"><button className="text-primary-500 font-medium">Review</button></td>
+                        <td className="py-4 flex items-center gap-3">
+                          <button className="text-primary-500 font-medium">Review</button>
+                          <button 
+                            onClick={() => handleDeleteAdmission(adm._id)}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {admissions.length === 0 && (
@@ -291,6 +407,135 @@ export default function AdminDashboard() {
                 ) : (
                   <span>Upload Image</span>
                 )}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {activeTab === "Contact Messages" && (
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
+            <h2 className="text-2xl font-bold mb-6">Student Inquiries</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 text-sm text-foreground/60">
+                    <th className="pb-4 font-medium">Name</th>
+                    <th className="pb-4 font-medium">Subject</th>
+                    <th className="pb-4 font-medium">Message</th>
+                    <th className="pb-4 font-medium">Date</th>
+                    <th className="pb-4 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {contacts.map((contact, idx) => (
+                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-800/50">
+                      <td className="py-4 font-medium">
+                        {contact.name}<br/>
+                        <span className="text-xs text-foreground/50">{contact.email}</span>
+                      </td>
+                      <td className="py-4 font-medium">{contact.subject}</td>
+                      <td className="py-4 max-w-xs truncate">{contact.message}</td>
+                      <td className="py-4">{new Date(contact.createdAt).toLocaleDateString()}</td>
+                      <td className="py-4">
+                        <button 
+                          onClick={() => handleDeleteContact(contact._id)}
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {contacts.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-4 text-center text-foreground/50">No messages found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "Site Settings" && (
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
+            <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
+              <Settings className="text-primary-500" />
+              <span>Update Site Information</span>
+            </h2>
+            
+            <form onSubmit={handleUpdateSettings} className="space-y-6 max-w-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2">College Name</label>
+                  <input 
+                    type="text" 
+                    value={siteSettings.collegeName}
+                    onChange={(e) => setSiteSettings({...siteSettings, collegeName: e.target.value})}
+                    className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border-none outline-none" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Primary Phone</label>
+                  <input 
+                    type="text" 
+                    value={siteSettings.phone}
+                    onChange={(e) => setSiteSettings({...siteSettings, phone: e.target.value})}
+                    className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border-none outline-none" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">College Email</label>
+                <input 
+                  type="email" 
+                  value={siteSettings.email}
+                  onChange={(e) => setSiteSettings({...siteSettings, email: e.target.value})}
+                  className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border-none outline-none" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Full Address</label>
+                <textarea 
+                  rows={3}
+                  value={siteSettings.address}
+                  onChange={(e) => setSiteSettings({...siteSettings, address: e.target.value})}
+                  className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border-none outline-none" 
+                ></textarea>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                <h3 className="font-bold mb-4">Social Media Links</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium mb-1">Instagram URL</label>
+                    <input 
+                      type="text" 
+                      value={siteSettings.instagramUrl}
+                      onChange={(e) => setSiteSettings({...siteSettings, instagramUrl: e.target.value})}
+                      className="w-full px-3 py-2 rounded bg-gray-50 dark:bg-slate-800 border-none outline-none text-sm" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1">Facebook URL</label>
+                    <input 
+                      type="text" 
+                      value={siteSettings.facebookUrl}
+                      onChange={(e) => setSiteSettings({...siteSettings, facebookUrl: e.target.value})}
+                      className="w-full px-3 py-2 rounded bg-gray-50 dark:bg-slate-800 border-none outline-none text-sm" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isSavingSettings}
+                className="w-full py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg font-bold transition-all disabled:opacity-50"
+              >
+                {isSavingSettings ? "Saving..." : "Save Changes"}
               </button>
             </form>
           </div>
