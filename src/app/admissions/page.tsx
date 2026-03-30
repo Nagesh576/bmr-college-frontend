@@ -7,12 +7,25 @@ import { Send, FileText, CheckCircle } from "lucide-react";
 export default function Admissions() {
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Simulate API call to backend /api/data/admission
-    setTimeout(() => {
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/data/admission`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error("Failed to submit");
       setSubmitted(true);
-    }, 1000);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit application");
+    }
   };
 
   return (
@@ -96,28 +109,28 @@ export default function Admissions() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2">Full Name (As per 10th Marks Memo)</label>
-                <input required type="text" className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700" placeholder="John Doe" />
+                <input name="fullName" required type="text" className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700" placeholder="John Doe" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Mobile Number</label>
-                <input required type="text" className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700" placeholder="+91 98765 43210" />
+                <input name="phone" required type="text" className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700" placeholder="+91 98765 43210" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2">Email Address</label>
-                <input required type="email" className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700" placeholder="john@example.com" />
+                <input name="email" required type="email" className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700" placeholder="john@example.com" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Course of Interest</label>
-                <select required className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700">
+                <select name="courseOfInterest" required className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700">
                   <option value="">Select a Program</option>
-                  <option value="bsc_phy">B.Sc (Physical Sciences)</option>
-                  <option value="bsc_life">B.Sc (Life Sciences)</option>
-                  <option value="bcom_comp">B.Com (Computer Applications)</option>
-                  <option value="bcom_gen">B.Com (General)</option>
-                  <option value="ba">B.A (History, Econ, Pol Sci)</option>
+                  <option value="B.Sc (Physical Sciences)">B.Sc (Physical Sciences)</option>
+                  <option value="B.Sc (Life Sciences)">B.Sc (Life Sciences)</option>
+                  <option value="B.Com (Computer Applications)">B.Com (Computer Applications)</option>
+                  <option value="B.Com (General)">B.Com (General)</option>
+                  <option value="B.A (History, Econ, Pol Sci)">B.A (History, Econ, Pol Sci)</option>
                 </select>
               </div>
             </div>
@@ -125,18 +138,18 @@ export default function Admissions() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2">Previous Education (10+2 / Inter)</label>
-                <select required className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700">
+                <select name="previousEducation" required className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700">
                   <option value="">Select Stream</option>
-                  <option value="mpc">MPC (Maths, Physics, Chemistry)</option>
-                  <option value="bipc">BiPC (Biology, Physics, Chemistry)</option>
-                  <option value="cec">CEC (Civics, Economics, Commerce)</option>
-                  <option value="mec">MEC (Maths, Economics, Commerce)</option>
-                  <option value="hec">HEC (History, Economics, Commerce)</option>
+                  <option value="MPC (Maths, Physics, Chemistry)">MPC (Maths, Physics, Chemistry)</option>
+                  <option value="BiPC (Biology, Physics, Chemistry)">BiPC (Biology, Physics, Chemistry)</option>
+                  <option value="CEC (Civics, Economics, Commerce)">CEC (Civics, Economics, Commerce)</option>
+                  <option value="MEC (Maths, Economics, Commerce)">MEC (Maths, Economics, Commerce)</option>
+                  <option value="HEC (History, Economics, Commerce)">HEC (History, Economics, Commerce)</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Percentage / CGPA</label>
-                <input required type="number" step="0.1" max="100" className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700" placeholder="e.g. 85.5 or 9.2" />
+                <input name="marksPercentage" required type="number" step="0.1" max="100" className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-800 border focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all dark:border-slate-700" placeholder="e.g. 85.5 or 9.2" />
               </div>
             </div>
 

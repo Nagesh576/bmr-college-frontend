@@ -106,9 +106,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 z-10 relative">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { num: '20+', label: 'Years of Excellence' },
-              { num: '5000+', label: 'Successful Alumni' },
-              { num: '50+', label: 'Expert Faculty' },
+              { num: '10+', label: 'Years of Excellence' },
+              { num: '5+', label: 'Successful Alumni' },
+              { num: '15+', label: 'Expert Faculty' },
               { num: '100%', label: 'Placement Assistance' },
             ].map((stat, idx) => (
               <motion.div 

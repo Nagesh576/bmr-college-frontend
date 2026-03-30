@@ -6,6 +6,8 @@ import { User, LogOut, Settings, Image as ImageIcon, Briefcase, FileText, Upload
 
 export default function AdminDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [token, setToken] = useState("");
+  const [admissions, setAdmissions] = useState<any[]>([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [activeTab, setActiveTab] = useState("Dashboard");
@@ -16,13 +18,43 @@ export default function AdminDashboard() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Campus");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === "admin" && password === "admin") setIsLoggedIn(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Login failed");
+      
+      setToken(data.token);
+      setIsLoggedIn(true);
+      fetchAdmissions(data.token);
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const fetchAdmissions = async (authToken: string) => {
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_URL}/data/admissions`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      if (res.ok) setAdmissions(data);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setToken("");
+    setAdmissions([]);
   };
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -174,20 +206,24 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    <tr className="border-b border-gray-50 dark:border-gray-800/50">
-                      <td className="py-4 font-medium">Rahul Sharma</td>
-                      <td className="py-4">B.Sc (Physical Sciences)</td>
-                      <td className="py-4">Today</td>
-                      <td className="py-4"><span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 rounded text-xs font-bold">Pending</span></td>
-                      <td className="py-4"><button className="text-primary-500 font-medium">Review</button></td>
-                    </tr>
-                    <tr className="border-b border-gray-50 dark:border-gray-800/50">
-                      <td className="py-4 font-medium">Priya Reddy</td>
-                      <td className="py-4">B.Com (Computers)</td>
-                      <td className="py-4">Yesterday</td>
-                      <td className="py-4"><span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 rounded text-xs font-bold">Approved</span></td>
-                      <td className="py-4"><button className="text-foreground/50 font-medium">Details</button></td>
-                    </tr>
+                    {admissions.map((adm, idx) => (
+                      <tr key={idx} className="border-b border-gray-50 dark:border-gray-800/50">
+                        <td className="py-4 font-medium">{adm.fullName}</td>
+                        <td className="py-4">{adm.courseOfInterest}</td>
+                        <td className="py-4">{new Date(adm.createdAt).toLocaleDateString()}</td>
+                        <td className="py-4">
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${adm.status === 'Approved' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : adm.status === 'Rejected' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30'}`}>
+                            {adm.status}
+                          </span>
+                        </td>
+                        <td className="py-4"><button className="text-primary-500 font-medium">Review</button></td>
+                      </tr>
+                    ))}
+                    {admissions.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-4 text-center text-foreground/50">No applications found.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
